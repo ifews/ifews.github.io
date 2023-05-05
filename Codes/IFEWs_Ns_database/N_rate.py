@@ -13,7 +13,7 @@
 # ## Setup
 # # Import necessary libraries
 
-# In[1]:
+# In[76]:
 
 
 import matplotlib.pyplot as plt
@@ -59,7 +59,7 @@ load_dotenv()
 # Workflow of this section is illustraded below:
 # ![image.png](attachment:image.png)
 
-# In[2]:
+# In[77]:
 
 
 import urllib.request
@@ -73,7 +73,7 @@ path = os.path.join(parent_dir, directory)
 API_key = os.getenv('API_KEY')
 
 
-# In[ ]:
+# In[78]:
 
 
 class c_usda_quick_stats:
@@ -109,7 +109,7 @@ class c_usda_quick_stats:
 
 # ### Crop Data
 
-# In[ ]:
+# In[79]:
 
 
 #Corn Grain Yield Bu/Acre
@@ -139,7 +139,7 @@ parameters7 =    'source_desc=SURVEY' +                  '&sector_desc=CROPS' + 
 
 # ### Animal Data
 
-# In[ ]:
+# In[80]:
 
 
 # Live Population of Hogs
@@ -166,7 +166,7 @@ parameters14 =    'source_desc=SURVEY' +                  '&' + urllib.parse.quo
 
 # #### Loop through all parameters
 
-# In[ ]:
+# In[81]:
 
 
 parameters = [parameters1, parameters2, parameters3, parameters4, parameters50, parameters51, parameters6, parameters7, parameters8, parameters9, parameters10, parameters11, parameters12, parameters13, parameters14]
@@ -193,7 +193,7 @@ for i in range(len(parameters)):
 
 # #### Animal
 
-# In[3]:
+# In[82]:
 
 
 # path
@@ -212,7 +212,7 @@ filestoremove = ['cattle_slaughtered_head_state_ifew_ge1997.csv','hogs_slaughter
 files = [x for x in files if x not in filestoremove]
 
 
-# In[4]:
+# In[83]:
 
 
 # create an empty list to store all the dataframes
@@ -292,7 +292,7 @@ animal_df = animal_df.rename(columns={
 # 
 # In order to validate the interpolation, we use yearly data for Iowa and compared it with the sum of our results.
 
-# In[5]:
+# In[84]:
 
 
 animal_df = animal_df.replace(',', '', regex=True)
@@ -302,7 +302,7 @@ animal_df = animal_df.replace(' (D)', float('nan')).astype({'Milk Cattle': 'floa
 animal_df = animal_df.replace(' (D)', float('nan')).astype({'Other Cattle': 'float'})
 
 
-# In[6]:
+# In[85]:
 
 
 #Function for animal population
@@ -389,7 +389,7 @@ def IFEWs_animal(animal_df, int_kind):
     return final
 
 
-# In[7]:
+# In[86]:
 
 
 # create dictionary to store df_merged for each kind
@@ -442,13 +442,13 @@ best_kind
 
 # Now we can save the final animal data in animal
 
-# In[8]:
+# In[87]:
 
 
 animal = IFEWs_animal(animal_df=animal_df, int_kind = best_kind)
 
 
-# In[9]:
+# In[88]:
 
 
 # Set the seed for reproducibility
@@ -472,7 +472,7 @@ fig = px.line(subset_animal, x="Year", y="Other Cattle", color="County", line_gr
 fig.show()
 
 
-# In[ ]:
+# In[89]:
 
 
 # # Compare with old 
@@ -498,7 +498,7 @@ fig.show()
 
 # Get data
 
-# In[29]:
+# In[90]:
 
 
 files = os.listdir(dir_name)
@@ -560,7 +560,7 @@ df_crops.rename(columns = {'county_name': "County", "year": "Year", "Value__corn
 # 
 # **Deal with Nan values**
 
-# In[30]:
+# In[91]:
 
 
 col = ['CAP', 'CGH', 'CGY', 'SH', 'SAP', 'SY']
@@ -575,7 +575,7 @@ df_crops = df_crops.replace(',', '', regex=True)
 df_crops[['CAP', 'CGH', 'CGY', 'SH', 'SAP', 'SY']] = df_crops[['CAP', 'CGH', 'CGY', 'SH', 'SAP', 'SY']].apply(pd.to_numeric)
 
 
-# In[31]:
+# In[92]:
 
 
 # Missing years
@@ -593,7 +593,7 @@ df = pd.concat([df, pd.DataFrame(new_rows)])
 
 # No data for crops in Taylor in 2015.
 
-# In[32]:
+# In[93]:
 
 
 # Define a function to interpolate missing years for a specific county
@@ -636,7 +636,7 @@ for county in df_crops['County'].unique():
 
 # #### Merge Crop and Animal 
 
-# In[34]:
+# In[94]:
 
 
 # animal must be first because has longer dataframe
@@ -648,7 +648,7 @@ df_USDA['County'] = df_USDA['County'].apply(lambda x: x.title())
 df_USDA['County'] = df_USDA['County'].replace('Obrien', "O Brien")
 
 
-# In[35]:
+# In[95]:
 
 
 path = os.path.join(parent_dir, 'usda.csv')
@@ -666,7 +666,7 @@ df_USDA.to_csv(path, index=False)
 # First, we clip the Nrate files for Iowa boundaries.
 # #### Clip Iowa
 
-# In[36]:
+# In[96]:
 
 
 # path
@@ -685,14 +685,14 @@ for i in range(len(y)):
     files = [x for x in files if y[i] not in x]
 
 
-# In[37]:
+# In[97]:
 
 
 for file in files:
     f = os.path.join(dir_name1, file)
 
 
-# In[38]:
+# In[98]:
 
 
 # Plot one of tif files
@@ -706,7 +706,7 @@ ax.set_axis_off()
 plt.show()
 
 
-# In[39]:
+# In[99]:
 
 
 # Get boundary data
@@ -716,14 +716,14 @@ file_boundary = os.path.join(parent_dir, "Iowa Counties", 'IowaCounties.shp')
 iowa = gpd.read_file(file_boundary)
 
 
-# In[40]:
+# In[100]:
 
 
 print('crop extent crs: ', iowa.crs)
 print('lidar crs: ', fertilizer_im.rio.crs)
 
 
-# In[41]:
+# In[101]:
 
 
 # Change CRS of crop extent to match the raster image
@@ -739,7 +739,7 @@ ax.set_axis_off()
 plt.show()
 
 
-# In[42]:
+# In[102]:
 
 
 nrate_clipped = fertilizer_im.rio.clip(iowa.geometry.apply(mapping),
@@ -753,7 +753,7 @@ ax.set_axis_off()
 plt.show()
 
 
-# In[44]:
+# In[103]:
 
 
 # export new data
@@ -769,7 +769,7 @@ nrate_clipped.rio.to_raster(path_to_tif_file)
 # This section will transform data from raster to points so we can interpolate the data and generate data for each county
 # This will be done here for year 2019. A for loop will make this for all necessary years (1997 to 2021)
 
-# In[45]:
+# In[104]:
 
 
 # Convert the raster dataset to a point shapefile using rasterio
@@ -788,7 +788,7 @@ with rasterio.open(path_to_tif_file) as src:
         point_gdf = gpd.GeoDataFrame(df, crs=crs, geometry=geometry)
 
 
-# In[46]:
+# In[105]:
 
 
 # Compute mean values of raster dataset in polygons of Iowa shapefile - shoud output 99 values (one for each county)
@@ -797,14 +797,14 @@ mean_vals = [feature['mean'] for feature in stats]
 iowa['CN_lb/acres'] = mean_vals
 
 
-# In[47]:
+# In[106]:
 
 
 # Change CRS to UTM zone 15N
 iowa_utm = iowa.to_crs(epsg=26915)
 
 
-# In[48]:
+# In[107]:
 
 
 #iowa.crs
@@ -817,13 +817,13 @@ plt.title('Nitrogen Application Rates (pounds/acre) in Iowa from Peiyu')
 
 # #### Clean shapefile
 
-# In[49]:
+# In[108]:
 
 
 iowa = iowa.drop(['FID', 'PERIMETER', 'DOMCountyI',  'FIPS', 'FIPS_INT', 'SHAPE_Leng', 'SHAPE_Area'], axis=1)
 
 
-# In[50]:
+# In[109]:
 
 
 iowa.rename(columns={'CountyName': 'County'}, inplace = True)
@@ -833,7 +833,7 @@ iowa
 
 # #### Loop for all files of Nrate
 
-# In[ ]:
+# In[110]:
 
 
 for idx, file in enumerate(files):
@@ -899,7 +899,7 @@ for idx, file in enumerate(files):
 # #### Aggregate Shapefiles in One shapefile (temporal series)
 # Read in each shapefile as a separate GeoDataFrame and store them in a list:
 
-# In[51]:
+# In[111]:
 
 
 # path
@@ -923,7 +923,7 @@ for filepath in filepaths:
     gdfs.append(gdf)    
 
 
-# In[52]:
+# In[112]:
 
 
 # Concatenate the list of geodata into a single one
@@ -940,13 +940,13 @@ merged_gdf = merged_gdf.drop(['FID', 'PERIMETER', 'DOMCountyI',  'FIPS', 'FIPS_I
 merged_gdf.rename(columns={"CountyName":"County", "StateAbbr":"State"}, inplace = True)
 
 
-# In[53]:
+# In[113]:
 
 
 merged_gdf['County'] = merged_gdf['County'].replace('Obrien', "O Brien")
 
 
-# In[ ]:
+# In[114]:
 
 
 # # create sample dataframes
@@ -964,7 +964,7 @@ merged_gdf['County'] = merged_gdf['County'].replace('Obrien', "O Brien")
 
 # ## Merge USDA and Nrate
 
-# In[54]:
+# In[115]:
 
 
 IFEWs = pd.merge(df_USDA, merged_gdf, on=['County', 'Year'], how='left')
@@ -1027,7 +1027,7 @@ IFEWs = pd.merge(df_USDA, merged_gdf, on=['County', 'Year'], how='left')
 
 # #### Commercial Nitrogen in kg/ha
 
-# In[55]:
+# In[116]:
 
 
 IFEWs['CN'] = round(IFEWs["CN_lb/ac"]*1.121, 1)
@@ -1036,7 +1036,7 @@ IFEWs['CN'] = round(IFEWs["CN_lb/ac"]*1.121, 1)
 # #### Manure Nitrogen in kg/ha
 # Total Crop area planted - Apply manure nitrogen to planted areas.
 
-# In[56]:
+# In[117]:
 
 
 # Define the function to calculate ManureN_kg_ha for each row
@@ -1058,7 +1058,7 @@ IFEWs['MN'] = IFEWs.apply(calculate_manure_n, axis=1)
 
 # #### Grain Nitrogen in kg/ha
 
-# In[57]:
+# In[118]:
 
 
 def calculate_grain_n(row):
@@ -1080,7 +1080,7 @@ IFEWs['GN'] = IFEWs.apply(calculate_grain_n, axis=1)
 # 
 # For soybeans bushels consider 1 metric ton/hectare = 14.87 (15) bushels/acre from https://www.extension.iastate.edu/agdm/wholefarm/pdf/c6-80.pdf
 
-# In[58]:
+# In[119]:
 
 
 def calculate_fix_n(row):
@@ -1099,7 +1099,7 @@ IFEWs['FN'] = IFEWs.apply(calculate_fix_n, axis=1)
 # ### Nitrogen Surplus
 # In kg/ha
 
-# In[59]:
+# In[120]:
 
 
 def calculate_ns(row):
@@ -1116,7 +1116,7 @@ def calculate_ns(row):
 IFEWs['NS'] = IFEWs.apply(calculate_ns, axis=1)
 
 
-# In[60]:
+# In[121]:
 
 
 IFEWs.head(5)
@@ -1124,16 +1124,16 @@ IFEWs.head(5)
 
 # ## Export data
 
-# In[61]:
+# In[124]:
 
 
 path = os.path.join(parent_dir, 'IFEWs_1997to2019.csv')
-IFEWs.to_csv(path, index=False)
+(IFEWs.drop(['geometry'], axis = 1)).to_csv(path)
 
 
 # ## Interactive Plot
 
-# In[62]:
+# In[125]:
 
 
 import json
@@ -1142,13 +1142,13 @@ with open(path) as f:
     counties = json.load(f)
 
 
-# In[63]:
+# In[126]:
 
 
 IFEWs = IFEWs.drop(['geometry'], axis = 1)
 
 
-# In[64]:
+# In[127]:
 
 
 # Get FIPS
@@ -1169,25 +1169,25 @@ df.rename(columns = {"fips": "FIPS"}, inplace = True)
 ifews = df.merge(IFEWs, left_on='name', right_on = 'County')
 
 
-# In[65]:
+# In[128]:
 
 
 counties["features"][0].keys()
 
 
-# In[ ]:
+# In[129]:
 
 
 #ifews = ifews[ifews['Year'] == 2019]
 
 
-# In[66]:
+# In[130]:
 
 
 counties["features"][0]['properties'].keys()
 
 
-# In[ ]:
+# In[131]:
 
 
 #counties["features"][0]['geometry']['coordinates'][0][0]
@@ -1195,7 +1195,7 @@ counties["features"][0]['properties'].keys()
 
 # As you can see, the coordinates are accurate up to 14 decimal places, which translates to cm accuracy. We don’t need that much accuracy. We will round off the coordinates to two decimal places (1.1 km accuracy). That’ll help reduce the size of the visualization.
 
-# In[67]:
+# In[132]:
 
 
 #Round off the locations to 2 decimal places (about 1.1 km accuracy)
@@ -1207,19 +1207,19 @@ for i in range(0, len(counties["features"])):
             print(i,j)
 
 
-# In[68]:
+# In[133]:
 
 
 counties["features"][0]['geometry']['coordinates'][0][0]
 
 
-# In[69]:
+# In[134]:
 
 
 ifews['Year'] = pd.to_datetime(ifews['Year'], format = "%Y")
 
 
-# In[70]:
+# In[135]:
 
 
 max_count = ifews['NS'].max()
@@ -1242,7 +1242,7 @@ fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0},)
 fig.show()
 
 
-# In[71]:
+# In[ ]:
 
 
 # Out result
@@ -1253,106 +1253,106 @@ fig.write_html(path)
 # In[ ]:
 
 
-import ipywidgets as widgets
-from IPython.display import display
-import plotly.express as px
+# import ipywidgets as widgets
+# from IPython.display import display
+# import plotly.express as px
 
-# Define the function that will be called when the dropdown value changes
-def update_plot(column):
-    max_count = ifews[column].max()
-    fig = px.choropleth_mapbox(ifews, geojson=counties,
-                               locations='FIPS',
-                               featureidkey = 'properties.FIPS',                  
-                               color=column,
-                               color_continuous_scale="Viridis",
-                               hover_name = 'County', #the information in the box
-                               hover_data = column,                    
-                               range_color=(ifews[column].min(), ifews[column].max()),
-                               mapbox_style="carto-positron",
-                               zoom=5.5,
-                               center={'lat': 41.878, 'lon': -93.097},
-                               opacity=0.8,
-                          animation_frame='Year')
+# # Define the function that will be called when the dropdown value changes
+# def update_plot(column):
+#     max_count = ifews[column].max()
+#     fig = px.choropleth_mapbox(ifews, geojson=counties,
+#                                locations='FIPS',
+#                                featureidkey = 'properties.FIPS',                  
+#                                color=column,
+#                                color_continuous_scale="Viridis",
+#                                hover_name = 'County', #the information in the box
+#                                hover_data = column,                    
+#                                range_color=(ifews[column].min(), ifews[column].max()),
+#                                mapbox_style="carto-positron",
+#                                zoom=5.5,
+#                                center={'lat': 41.878, 'lon': -93.097},
+#                                opacity=0.8,
+#                           animation_frame='Year')
 
-    fig.update_geos(fitbounds="locations",visible=False)
-    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0},)
-    fig.show()
+#     fig.update_geos(fitbounds="locations",visible=False)
+#     fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0},)
+#     fig.show()
 
-# Create the dropdown widget with the column names as options
-column_dropdown = widgets.Dropdown(
-    options=['Beef Cattle', 'Hogs', 'Milk Cattle', 'Other Cattle',
-             'CAP', 'CGH', 'CGY', 'SH', 'SAP', 'SY', 'CN', 'MN', 'GN', 'FN', 'NS'],
-    value='NS',
-    description='Column to plot:',
-)
+# # Create the dropdown widget with the column names as options
+# column_dropdown = widgets.Dropdown(
+#     options=['Beef Cattle', 'Hogs', 'Milk Cattle', 'Other Cattle',
+#              'CAP', 'CGH', 'CGY', 'SH', 'SAP', 'SY', 'CN', 'MN', 'GN', 'FN', 'NS'],
+#     value='NS',
+#     description='Column to plot:',
+# )
 
-# Display the widget
-display(column_dropdown)
+# # Display the widget
+# display(column_dropdown)
 
-# Call the update_plot function with the initial value of the dropdown
-update_plot(column_dropdown.value)
+# # Call the update_plot function with the initial value of the dropdown
+# update_plot(column_dropdown.value)
 
-# observe changes in the dropdown widget and update the plot
-def on_change(change):
-    if change['type'] == 'change' and change['name'] == 'value':
-        update_plot(change['new'])
+# # observe changes in the dropdown widget and update the plot
+# def on_change(change):
+#     if change['type'] == 'change' and change['name'] == 'value':
+#         update_plot(change['new'])
 
-column_dropdown.observe(on_change)
-
-
-# In[ ]:
-
-
-import ipywidgets as widgets
-from IPython.display import display
-import plotly.express as px
-
-# Define the function that will be called when the dropdown value changes
-def update_plot(column, fig):
-    max_count = ifews[column].max()
-    fig.data[0].update(z=ifews[column])
-    fig.update_traces(hovertemplate='County: %{hovertext}<br>' + column + ': %{z:.2f}')
-    fig.update_layout(title=column + ' by County')
-    fig.update_coloraxes(coloraxis=dict(cmin=ifews[column].min(), cmax=ifews[column].max()))
-
-# Create the initial plot with the default column
-fig = px.choropleth_mapbox(ifews, geojson=counties,
-                           locations='FIPS',
-                           featureidkey='properties.FIPS',
-                           color='NS',
-                           color_continuous_scale="Viridis",
-                           hover_name='County',
-                           hover_data='NS',
-                           range_color=(ifews['NS'].min(), ifews['NS'].max()),
-                           mapbox_style="carto-positron",
-                           zoom=5.5,
-                           center={'lat': 41.878, 'lon': -93.097},
-                           opacity=0.8,
-                           animation_frame='Year')
-
-fig.update_geos(fitbounds="locations", visible=False)
-fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-
-# Create the dropdown widget with the column names as options
-column_dropdown = widgets.Dropdown(
-    options=['Beef Cattle', 'Hogs', 'Milk Cattle', 'Other Cattle',
-             'CAP', 'CGH', 'CGY', 'SH', 'SAP', 'SY', 'CN', 'MN', 'GN', 'FN', 'NS'],
-    value='NS',
-    description='Column to plot:',
-)
-
-# Display the widget and the initial plot
-display(widgets.VBox([column_dropdown, fig]))
-
-# observe changes in the dropdown widget and update the plot
-def on_change(change):
-    if change['type'] == 'change' and change['name'] == 'value':
-        update_plot(change['new'], fig)
-
-column_dropdown.observe(on_change)
+# column_dropdown.observe(on_change)
 
 
 # In[ ]:
+
+
+# import ipywidgets as widgets
+# from IPython.display import display
+# import plotly.express as px
+
+# # Define the function that will be called when the dropdown value changes
+# def update_plot(column, fig):
+#     max_count = ifews[column].max()
+#     fig.data[0].update(z=ifews[column])
+#     fig.update_traces(hovertemplate='County: %{hovertext}<br>' + column + ': %{z:.2f}')
+#     fig.update_layout(title=column + ' by County')
+#     fig.update_coloraxes(coloraxis=dict(cmin=ifews[column].min(), cmax=ifews[column].max()))
+
+# # Create the initial plot with the default column
+# fig = px.choropleth_mapbox(ifews, geojson=counties,
+#                            locations='FIPS',
+#                            featureidkey='properties.FIPS',
+#                            color='NS',
+#                            color_continuous_scale="Viridis",
+#                            hover_name='County',
+#                            hover_data='NS',
+#                            range_color=(ifews['NS'].min(), ifews['NS'].max()),
+#                            mapbox_style="carto-positron",
+#                            zoom=5.5,
+#                            center={'lat': 41.878, 'lon': -93.097},
+#                            opacity=0.8,
+#                            animation_frame='Year')
+
+# fig.update_geos(fitbounds="locations", visible=False)
+# fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+
+# # Create the dropdown widget with the column names as options
+# column_dropdown = widgets.Dropdown(
+#     options=['Beef Cattle', 'Hogs', 'Milk Cattle', 'Other Cattle',
+#              'CAP', 'CGH', 'CGY', 'SH', 'SAP', 'SY', 'CN', 'MN', 'GN', 'FN', 'NS'],
+#     value='NS',
+#     description='Column to plot:',
+# )
+
+# # Display the widget and the initial plot
+# display(widgets.VBox([column_dropdown, fig]))
+
+# # observe changes in the dropdown widget and update the plot
+# def on_change(change):
+#     if change['type'] == 'change' and change['name'] == 'value':
+#         update_plot(change['new'], fig)
+
+# column_dropdown.observe(on_change)
+
+
+# In[136]:
 
 
 # Filter data for Taylor county
