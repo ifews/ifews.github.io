@@ -1,4 +1,4 @@
-﻿Parameters,Parameters_Reference,Source,Spatial_Scale,Temporal_Scale,Accessibility
+Parameters,Parameters_Reference,Source,Spatial_Scale,Temporal_Scale,Accessibility
 Corn N Rates,x3,IFEWs,County,Yearly,"Python, geoprocessing"
 Animal,"x5, x6, x7, x8",IFEWs,County,Yearly,"Python, interpolation"
 Energy,"Et, Eoil",IFEWs,County,Yearly,"Python, minimize SSE"
