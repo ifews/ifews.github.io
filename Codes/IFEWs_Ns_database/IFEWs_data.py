@@ -40,8 +40,8 @@ from parameters import (
     parameters10s, parameters11s, parameters12s, ap, cp
     )
 from helper_functions import (
-    process_data, interpolation, best_interpol, join_census_survey, expand_df,
-     calculate_manure_n, calculate_fix_n, calculate_grain_n, calculate_ns
+    process_data, join_census_survey, expand_df,
+     calculate_manure_n, calculate_fix_n, calculate_grain_n, calculate_ns, interpolation, best_interpol
     )
 from caopeiyu_nrate import nrate_iowa_counties
 
@@ -84,6 +84,7 @@ crop_df.rename(columns = {'county_name': "CountyName", "year": "Year", "Value_co
                  "Value_soybeans_harvested":"SH", "Value_soybeans_planted":"SP",
                  "Value_soybeans_yield": "SY"}, inplace = True)
 crop_df.drop(crop_df[crop_df['CountyName'] == 'OTHER COUNTIES'].index, inplace = True)
+crop_df.drop(crop_df[crop_df['CountyName'] == 'OTHER (COMBINED) COUNTIES'].index, inplace = True)
 
 # ---------------------Validation - Yearly values for Iowa from USDA ----------------------
 crop_val = cp()
@@ -91,19 +92,19 @@ animal_val = ap()
 
 # expanded - expand so both final df has the same amount of years
 animal_df_survey = expand_df(df = animal_df_survey, validation_df = crop_val)
-crop_df = expand_df(df = crop_df, validation_df = animal_val)
+crop_df = expand_df(df = crop_df, validation_df = crop_val)
 
 # fill in gaps of census vs survey
 animal_df = join_census_survey(df_survey = animal_df_survey, df_census = animal_df_census)
 
 # find best interpolation based on SSE comparison with Iowa Yearly values 
 # ---------- Animal---------------------------------------------------------------------
-animal = interpolation(df=animal_df, method=best_interpol(df = animal_df, df_valid = animal_val)) 
+animal_ifews = interpolation(ifews_df=animal_df, method=best_interpol(ifews_df = animal_df, validation = animal_val)) 
 # -------- Crops ----------------------------------------------------------------------
-crops = interpolation(df=crop_df, method=best_interpol(df = crop_df, df_valid = crop_val))
+crops_ifews = interpolation(ifews_df=crop_df, method=best_interpol(ifews_df = crop_df, validation = crop_val))
 
 #--------------- merge USDA data ---------------------------------------------------
-df_USDA = pd.merge(animal, crops, on=['CountyName', 'Year'], how='left')
+df_USDA = pd.merge(animal_ifews, crops_ifews, on=['CountyName', 'Year'], how='left')
 
 # ---------------------- N fetilizer to Counties (Peiyu Cao) ------------------------------
 parent_dir = os.getcwd()

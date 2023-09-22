@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from scipy.interpolate import interp1d
 from c_usda_quick_stats import c_usda_quick_stats
 
 # Create an instance of c_usda_quick_stats
@@ -29,10 +30,11 @@ def process_data(parameters, names, wanted):
 
     if 'Value_other' in merged_df.columns:
         merged_df['Value_other'] = merged_df['Value_other'] - (merged_df['Value_beef'] + merged_df['Value_milk'])
-    
+        
     return merged_df
 
-def interpolation(df, method):
+def interpolation(ifews_df, method):
+    df = ifews_df.copy()
     county_names = df['CountyName'].unique()
     animal_names = ['Beef Cattle','Hogs', 'Milk Cattle', 'Other Cattle']
     crop_names = ['CP', 'CH', 'CGY', 'SH', 'SP', 'SY']
@@ -44,54 +46,58 @@ def interpolation(df, method):
         
     # Loop through county names and populate data
     for county_name in county_names:
-
-        # For each population
         for name in pop_names:
             k = pop_names.copy()
             k.remove(name)
 
-            df_current = df[df['CountyName'] == county_name].drop(k, axis=1)
-            years_to_pop = df_current[df_current[name].isna()]
-            interpolated = df_current.interpolate(method)
-            
-            for year in years_to_pop['Year']:
-                df.loc[(df['Year'] == year) & (df['CountyName']== county_name),name] = round(interpolated.loc[(interpolated['Year'] == year) & (interpolated['CountyName'] == county_name),name])
-        
+            # Filter the DataFrame for the specific county and population
+            county_df = df[(df['CountyName'] == county_name) & (df[name].notna())]
+
+            # Extract x and y values
+            x = county_df['Year'].astype(float).to_numpy()
+            y = county_df[name].astype(float).to_numpy()
+
+            # Extract xnew values
+            xnew = df[(df['CountyName'] == county_name) & (df[name].isna())]['Year'].astype(float).to_numpy()
+
+            f = interp1d(x, y, kind = method, fill_value="extrapolate")
+            ynew = f(xnew)
+
+            # Update the DataFrame with interpolated values
+            df.loc[(df['CountyName'] == county_name) & (df[name].isna()), name] = np.round(ynew)
+            for col in df.columns:
+                if pd.api.types.is_numeric_dtype(df[col]):
+                    # Replace negative values with zero in the entire column
+                    df[col] = df[col].apply(lambda x: 0 if x < 0 else x)
+
+    # Forward fill consecutive zeros with the last previous value
+    df = df.apply(lambda x: x.mask(x == 0).ffill())   
     return df  
 
-# Define a function to calculate SSE
-def calculate_sse(df_animal, df_valid):
-    squared_errors = (df_animal - df_valid) ** 2
-    sse = squared_errors.sum().sum()
-    return sse
+def best_interpol(ifews_df, validation):
+    # Assuming you have a DataFrame df_copy with a 'Year' column in datetime format
+    kinds = ['linear', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic']
 
-def best_interpol(df, df_valid):
-    # List of interpolation methods
-    kinds = ['linear', 'values', 'nearest', 'zero', 'slinear', 'quadratic', 'cubic', 'from_derivatives', 'piecewise_polynomial', 'pchip', 'akima', 'cubicspline']
+    # Create dictionaries to store the results
+    in_dfs = {}
+    df_sum_dfs = {}
+    sse = {}
 
-    # Initialize variables to keep track of the best method and SSE
-    best_sse = float('inf')
-    best_method = None
-
-    # Iterate through interpolation methods
-    for method in kinds:
-        # Make a copy of animal_df to avoid modifying the original
-        df_copy = df.copy()
-
-        # Run animal_interpol for the current method
-        interpolated_df = interpolation(df_copy, method)
+    # Iterate over each kind and perform interpolation and summation
+    for kind in kinds:
+        # Run interpolation for the current kind using 'method' parameter
+        in_dfs[kind] = interpolation(ifews_df, method=kind)
 
         # Group by Year and sum the values for each column
-        df_sum = interpolated_df.groupby('Year').sum()
+        df_sum_dfs[kind] = in_dfs[kind].groupby('Year').sum()
+        diff_val = df_sum_dfs[kind]-validation.set_index('Year')
+        diff_val.reset_index(inplace=True)
+        sse[kind] = (diff_val**2).sum().sum()
 
-        # Calculate SSE for the current method
-        sse = calculate_sse(df_sum, df_valid)
+    minim_sse = min(sse.values())
+    best = [key for key, value in sse.items() if value == minim_sse][0]
 
-        # Check if the current SSE is the smallest so far
-        if sse < best_sse:
-            best_sse = sse
-            best_method = method
-    return best_method   
+    return best  
 
 def join_census_survey(df_survey, df_census):
     # Iterate through survey and update values based on conditions
@@ -116,7 +122,7 @@ def expand_df(df, validation_df):
     counties = df['CountyName'].unique()
 
     # Create a list of years from 1968 to 2023
-    years = list(range(validation_df['Year'].min(), validation_df['Year'].max()+1))
+    years = list(range(validation_df['Year'].min(), validation_df['Year'].max()))
 
     # Create an empty DataFrame to store the expanded data
     expanded_df = pd.DataFrame(columns=df.columns)
@@ -138,7 +144,14 @@ def expand_df(df, validation_df):
     new_df = new_df.sort_values(['CountyName', 'Year']).reset_index(drop=True)
 
     # Fill any remaining NaN values with appropriate default values
-    new_df = new_df.fillna({'Hogs': np.nan, 'Beef Cattle': np.nan, 'Milk Cattle': np.nan, 'Other Cattle': np.nan})
+    new_df = new_df.fillna({'Hogs': np.nan, 'Beef Cattle': np.nan, 'Milk Cattle': np.nan,
+                             'Other Cattle': np.nan, "CGY":np.nan,	"SY":np.nan,	"CP":np.nan,
+                                 	"CH":np.nan,	"SP":np.nan,	"SH":np.nan})
+    
+    if 'CGY' in new_df.columns:
+        new_df = new_df.drop_duplicates(subset = ['CountyName', 'Year'])
+
+    new_df = new_df[new_df['Year']<2023]        
 
     return new_df           
 
@@ -151,7 +164,19 @@ def calculate_manure_n(row):
     soybeans_acres = row['SP']
     corn_acres = row['CP']
     
-    manure_n = (hogs * 0.027 * 365 + milk_cows * 0.204 * 365 + beef_cows * 0.15 * 365 + other_cattle * 0.5 * 0.1455 * 365 + other_cattle * 0.5 * 0.104 * 170) / (0.404686 * (soybeans_acres + corn_acres))
+    # from Gronberg et al. (2017) 
+    manure_n = (hogs * 0.027 * 365 +
+                milk_cows * 0.204 * 365 +
+                beef_cows * 0.15 * 365 +
+                other_cattle * 0.5 * 0.1455 * 365 +
+                other_cattle * 0.5 * 0.104 * 170) / (0.404686 * (soybeans_acres + corn_acres))
+    
+    # # from Andersen, D. S., & Pepple, L. M. (2017) 
+    # manure_n = (hogs * 0.036 * 365 +
+    #             milk_cows * 0.200 * 365 +
+    #             beef_cows * 0.029 * 365 +
+    #             other_cattle * 0.5 * 0.1455 * 365 +
+    #             other_cattle * 0.5 * 0.104 * 170) / (0.404686 * (soybeans_acres + corn_acres))
     
     return round(manure_n, 1)
 
