@@ -8,22 +8,37 @@ Last Change: Sept 6, 2023
 IFEWs Data Fetch
 This code fetches IFEWs necessary data from USDA and other sources.
 
-Variables:
-Beef Cattle = Beef Cattle Inventory (heads)  
-Milk Cattle = Milk Cattle Inventory (heads)  
-Other Cattle = Other Cattle Inventory (heads) - All cattle minus milk and beef
-Hogs = Hogs Inventory (heads)
-CP = Corn Area Planted (acres)
-CH= Corn Grain Area Harvested (acres)
-CGY = Corn Grain Yield (bu/ac)
-SP = Soybeans planted (acres)
-SH = Soybeans Area Harvested (acres)
-SY = Soybeans Yield (bu/ac)
+Variables*:
+beef = Beef Cattle Inventory (heads)  
+milk = Milk Cattle Inventory (heads)  
+cattle = All Cattle Inventory - includes calves, cows, steers and bulls (heads)
+steers = Cattle on Feed (heads)
+onfeed_sold = Cattle on Feed Sold (heads)
+bulls = adult male cattle (heads)
+calves = Young cattle (heads)
+beef_heifers = Young Female Beef Cattle (heads)
+dairy_150 = Young Female Dairy Cattle less than 1 year old (heads)
+dairy_400 = Young Female Dairy Cattle between 1 and 2 years old (heads)
+fin_cattle = Finishing Cattle (heads)
+hogs = Hogs Inventory (heads)
+hogs_sales = Hogs sold (heads)
+hogs_breeding = Hogs used for breeding (heads)
+hogs_fin = Hogs fattening (finish) (heads)
+hogs_sow = adult female Hogs (heads)
+hogs_boars = adult male Hogs (heads)
+corng_pa = Corn Area Planted (acres)
+corng_ha = Corn Grain Area Harvested (acres)
+corng_y = Corn Grain Yield (bu/ac)
+soy_pa = Soybeans planted (acres)
+soy_ha = Soybeans Area Harvested (acres)
+soy_y = Soybeans Yield (bu/ac)
 
-Time Scale = 1968 till CurrentYear-1
+*All yearly data.
+
+Time Scale = 1968** till Current Year-1
 Spatial Scale = Iowa Counties
 
-*Why 1968: animal data constrained 
+**Why 1968: animal data constrained 
 ============================================
 """
 import os
@@ -35,54 +50,29 @@ from dotenv import load_dotenv
 load_dotenv()
 import urllib.parse
 from parameters import (
-    parameters1, parameters2, parameters4, parameters5, parameters7, parameters8,
-    parameters9c, parameters10c, parameters11c, parameters12c, parameters9s,
-    parameters10s, parameters11s, parameters12s, ap, cp
+    hogs, hogs_others, beef, milk, other_cattle, on_feed,
+    corng_y, corng_pa, corng_ha, soy_y, soy_pa, soy_ha,
+    ap, cp
     )
 from helper_functions import (
-    process_data, join_census_survey, expand_df,
-     calculate_manure_n, calculate_fix_n, calculate_grain_n, calculate_ns, interpolation, best_interpol
+    process_data_crop, process_data_animal, expand_df, refine_animal_data,
+     calculate_manure_n, calculate_fix_n, calculate_grain_n, calculate_ns, interpolation
     )
 from caopeiyu_nrate import nrate_iowa_counties
 
-
 # Define animal and crop parameters
-animal_parameters_census = [parameters9c, parameters10c, parameters11c, parameters12c]
-animal_parameters_survey = [parameters9s, parameters10s, parameters11s, parameters12s]
-animal_names = ['hogs', 'beef', 'milk', 'other']
-animal_wanted = ['county_name', "year",  'Value_beef','Value_hogs','Value_milk',  'Value_other']  
-crop_parameters = [parameters1, parameters2, parameters4, parameters5, parameters7, parameters8]
-crop_names = ['corn_yield', 'soybeans_yield', 'corn_planted', 'corn_harvested', 'soybeans_planted', 'soybeans_harvested']
-crop_wanted = ['county_name', "year", "Value_corn_planted", "Value_corn_harvested", 
-          "Value_corn_yield", "Value_soybeans_harvested","Value_soybeans_planted",
-          "Value_soybeans_yield"]   
+animal_parameters = [hogs, hogs_others, beef, milk, other_cattle, on_feed]
+crop_parameters = [corng_y, corng_pa, corng_ha, soy_y, soy_pa, soy_ha]
 
 # Process animal and crop data
-animal_df_census = process_data(animal_parameters_census, animal_names, animal_wanted)
-animal_df_survey = process_data(animal_parameters_survey, animal_names, animal_wanted)
-crop_df = process_data(crop_parameters, crop_names, crop_wanted)
+animal_df = process_data_animal(animal_parameters)
+crop_df = process_data_crop(crop_parameters)
 
-# Rename colums
-animal_df_survey = animal_df_survey.rename(columns={
-    'county_name': 'CountyName',
-    'Value_beef': 'Beef Cattle',
-    'Value_hogs': 'Hogs',
-    'Value_milk': 'Milk Cattle',
-    'Value_other': 'Other Cattle',
-    'year': "Year"})
+animal_df.rename(columns={'county_name': "CountyName", 'year':'Year'
+            }, inplace=True)
+crop_df.rename(columns={'county_name': "CountyName", 'year':'Year'
+            }, inplace=True)
 
-animal_df_census = animal_df_census.rename(columns={
-    'county_name': 'CountyName',
-    'Value_beef': 'Beef Cattle',
-    'Value_hogs': 'Hogs',
-    'Value_milk': 'Milk Cattle',
-    'Value_other': 'Other Cattle',
-    'year': "Year"})
-
-crop_df.rename(columns = {'county_name': "CountyName", "year": "Year", "Value_corn_planted": 'CP',
-                 "Value_corn_harvested":"CH", "Value_corn_yield": "CGY",
-                 "Value_soybeans_harvested":"SH", "Value_soybeans_planted":"SP",
-                 "Value_soybeans_yield": "SY"}, inplace = True)
 crop_df.drop(crop_df[crop_df['CountyName'] == 'OTHER COUNTIES'].index, inplace = True)
 crop_df.drop(crop_df[crop_df['CountyName'] == 'OTHER (COMBINED) COUNTIES'].index, inplace = True)
 
@@ -91,17 +81,21 @@ crop_val = cp()
 animal_val = ap()
 
 # expanded - expand so both final df has the same amount of years
-animal_df_survey = expand_df(df = animal_df_survey, validation_df = crop_val)
+animal_df = expand_df(df = animal_df, validation_df = crop_val)
 crop_df = expand_df(df = crop_df, validation_df = crop_val)
 
-# fill in gaps of census vs survey
-animal_df = join_census_survey(df_survey = animal_df_survey, df_census = animal_df_census)
+# numeric
+cols = [ i for i in animal_df.columns if i not in ['CountyName', 'Year']]
+for col in cols:
+    animal_df[col] = pd.to_numeric(animal_df[col])
 
-# find best interpolation based on SSE comparison with Iowa Yearly values 
-# ---------- Animal---------------------------------------------------------------------
-animal_ifews = interpolation(ifews_df=animal_df, method=best_interpol(ifews_df = animal_df, validation = animal_val)) 
-# -------- Crops ----------------------------------------------------------------------
-crops_ifews = interpolation(ifews_df=crop_df, method=best_interpol(ifews_df = crop_df, validation = crop_val))
+cols = [ i for i in crop_df.columns if i not in ['CountyName', 'Year']]
+for col in cols:
+    crop_df[col] = pd.to_numeric(crop_df[col])
+
+
+animal_ifews = refine_animal_data(animal_df, animal_val)
+crops_ifews = interpolation(crop_df)
 
 #--------------- merge USDA data ---------------------------------------------------
 df_USDA = pd.merge(animal_ifews, crops_ifews, on=['CountyName', 'Year'], how='left')

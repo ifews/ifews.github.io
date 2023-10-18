@@ -82,8 +82,8 @@ def nrate_original(parent_dir):
         #clean shapefiles
         iowa = iowa.drop(['FID', 'PERIMETER', 'DOMCountyI',  'FIPS', 'FIPS_INT', 'SHAPE_Leng', 'SHAPE_Area'], axis=1)
 
-        iowa['CountyName'] = iowa['CountyName'].replace('Obrien', "O brien")
-        iowa['CountyName'] = iowa['CountyName'].str.upper()
+        #iowa['CountyName'] = iowa['CountyName'].replace('Obrien', "O brien")
+        #iowa['CountyName'] = iowa['CountyName'].str.upper()
         
         # Save the shapefile
         path_to_shp_file = os.path.join(parent_dir,
@@ -128,6 +128,7 @@ def nrate_iowa_counties(parent_dir):
 
     # Makes column names compatible with USDA data
     nrate_gdf.rename(columns={"StateAbbr":"State"}, inplace = True)
+    nrate_gdf['CountyName'] = nrate_gdf['CountyName'].replace('Obrien', "O BRIEN")
     nrate_gdf['CountyName'] = nrate_gdf['CountyName'].str.upper()
 
     return nrate_gdf
